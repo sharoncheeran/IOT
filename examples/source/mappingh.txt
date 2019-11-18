@@ -1,0 +1,50 @@
+
+/**
+ * File: mapping.h
+ * Author: Sharmin Rony and Sharon Cheeran
+ * Date: 01/03/2019
+ * Desc: header file for mapping the morse code
+ */
+
+#include <string>
+#include <map>
+using namespace std;
+#pragma once
+
+class mapping{
+private:
+  map<string, char>::iterator MCMapItr;
+  map<string, char> MCMap = {
+     {".-", 'A'},
+     {"-...", 'B'},
+     {"-.-.", 'C'},
+     {"-..", 'D'},
+     {".", 'E'},
+     {"..-.", 'F'},
+     {"--.", 'G'},
+     {"....", 'H'},
+     {"..", 'I'},
+     {".---", 'J'},
+     {"-.-", 'K'},
+     {".-..", 'L'},
+     {"--", 'M'},
+     {"-.", 'N'},
+     {"---", 'O'},
+     {".--.", 'P'},
+     {"--.-", 'Q'},
+     {".-.", 'R'},
+     {"...", 'S'},
+     {"-", 'T'},
+     {"..-", 'U'},
+     {"...-", 'V'},
+     {".--", 'W'},
+     {"-..-", 'X'},
+     {"-.--", 'Y'},
+     {"--..", 'Z'}
+  };
+
+public:
+  mapping();
+  char getCharacter(string MC);
+  string findMC(char character);
+};

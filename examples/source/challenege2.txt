@@ -1,0 +1,185 @@
+/**
+ * File: main.cpp
+ * Author: Sharmin Rony and Sharon Cheeran
+ * Date: 01/03/2019
+ * Desc: transferring and recieving code
+ */
+#include "MicroBit.h"
+#include "mapping.h"
+#include <stdlib.h>
+#include <stdio.h>
+#include <string>
+
+using namespace std;
+
+/* sending the morse code */
+void sending(string transmission);
+
+
+MicroBit uBit;
+
+//displaying dot/dash
+MicroBitImage DOT_IMAGE("0,0,0,0,0\n0,0,0,0,0\n0,0,255,0,0\n0,0,0,0,0\n0,0,0,0,0\n");
+MicroBitImage DASH_IMAGE("0,0,0,0,0\n0,0,0,0,0\n0,255,255,255,0\n0,0,0,0,0\n0,0,0,0,0\n");
+
+//Button events
+MicroBitButton buttonA(MICROBIT_PIN_BUTTON_A, MICROBIT_ID_BUTTON_A);
+
+//Pin events
+MicroBitPin P1(MICROBIT_ID_IO_P1, MICROBIT_PIN_P1, PIN_CAPABILITY_ALL);
+
+int main()
+{
+
+    uBit.init();
+
+    //Create instance of class
+    mapping* morse_code = new mapping();
+
+    //Variables
+    uint64_t waiting = 0;
+    uint64_t signal_waiting = 0;
+    string transmission;
+    char character;
+
+    bool pressed = false;
+    bool coming_signal = false;
+
+
+    while (1) {
+
+      //Updating the time for the button
+      uint64_t button_time = uBit.systemTime();
+
+      //TRANSMISSION
+      while (buttonA.isPressed()) {   //changes the boolen value of pressed
+        pressed = true;
+      }
+
+      //getting the duration of the input
+      uint64_t holding_time = uBit.systemTime() - button_time;
+
+      if (pressed == true) {
+
+        if ((holding_time < 500))
+         {
+          transmission += '.';
+          uBit.display.print(DOT_IMAGE);   //printing the dot image
+          uBit.sleep(800);
+          uBit.display.clear();
+        }
+
+        else if ((holding_time > 500) && (holding_time < 1000))
+        {
+          transmission += '-';
+          uBit.display.print(DASH_IMAGE);  //printing the dash images
+          uBit.sleep(800);
+          uBit.display.clear();
+        }
+
+        else if (holding_time > 1000) {
+          uBit.display.print("X");
+          uBit.sleep(800);
+          uBit.display.clear();
+        }
+        //Reseting the variables
+        pressed = false;
+        waiting = uBit.systemTime();
+
+        button_time = uBit.systemTime();
+        uBit.display.print(transmission);
+      }
+
+
+      if (((button_time - waiting) > 2000) && (waiting != 0)) {
+        //Get character associated with morse input
+        character = morse_code->getCharacter(transmission);
+        if (character != '/') { //Only if valid morse found
+
+          //Send morse code
+          sending(transmission);
+          uBit.display.print(">");
+          uBit.sleep(800);
+          uBit.display.clear();
+        } else {
+          uBit.display.print("/");
+          uBit.sleep(800);
+          uBit.display.clear();
+        }
+
+        transmission.clear();   //Reset variables to allow for new transmissions
+        waiting = 0;
+      }
+
+      /** HANDLE INCOMING MORSE **/
+      uint64_t signalTime = uBit.systemTime();
+
+      //Waiting to get the signal from Pin 1
+      while (P1.getDigitalValue() == 1) {
+        coming_signal = true;
+      }
+
+
+      uint64_t signalDuration = uBit.systemTime() - signalTime;   //Getting the signal duration
+
+      //Process incoming signal
+      if (coming_signal == true) {
+        if ((signalDuration > 100) && (signalDuration < 500)) {
+          transmission += '.';
+        }
+        else if ((signalDuration > 500) && (signalDuration < 1000)) {
+          transmission += '-';
+        }
+        //NOISE
+        else if (signalDuration > 1000) {
+          uBit.display.print("!");
+          uBit.sleep(800);
+          uBit.display.clear();
+        }
+
+        coming_signal = false;    //Reset variables to allow for new incoming signals
+        signal_waiting = uBit.systemTime();
+
+        signalTime = uBit.systemTime();     //Updating system time
+      }
+
+      //Incoming signal is finished if wait time met
+      if (((signalTime - signal_waiting) > 2000) && (signal_waiting != 0)) {
+        character = morse_code->getCharacter(transmission);
+
+        //Display character to user
+        uBit.display.print(character);
+        uBit.sleep(800);
+        uBit.display.clear();
+        //Reset variables to allow for new transmissions
+        transmission.clear();
+        signal_waiting = 0;
+      }
+
+    }
+
+    //Delete class instances and go into power efficient sleep
+    delete morse_code;
+    release_fiber();
+}
+
+void sending(string transmission) {
+  //storing dots and dashs
+  int transmissionLength = transmission.length();
+  char transmissionArray[transmissionLength + 1];
+  strcpy(transmissionArray, transmission.c_str());
+
+  //Send morse code across wire attached to pin 1
+  for (int i = 0; i < transmissionLength; i++) {
+    if (transmissionArray[i] == '.') {
+      P1.setDigitalValue(1);
+      uBit.sleep(100);
+      P1.setDigitalValue(0);
+    } else if (transmissionArray[i] == '-') {
+      P1.setDigitalValue(1);
+      uBit.sleep(200);
+      P1.setDigitalValue(0);
+    }
+  }
+}
+

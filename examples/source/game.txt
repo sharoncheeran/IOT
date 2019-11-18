@@ -1,0 +1,190 @@
+/**
+ * File: main.cpp
+ * Author: Sharon Cheeran
+ * Date: 21-01-2018
+ * Desc: Basic Micro:bit example taken from BBC examples.
+ * Copyright: University of West of England 2017
+ */
+#include "MicroBit.h"
+
+struct Point  //struct with coordinates
+{
+    int     x;
+    int     y;
+};
+
+MicroBit uBit;
+MicroBitImage target(5,5);
+int game_over;
+int TargetSpeed = 500; //speed for Target
+int PlayerSpeed = 120; //speed of player
+int BulletSpeed = 50; //speed of bullet
+Point player; //coor for player
+Point bullet; //coor for bullet
+
+int addTarget() //adds the target on the top
+{
+  target.setPixelValue(1,0,255);
+
+  if (target.getPixelValue(1,2))
+    return 1;// returns one if its true and ends the game
+
+  //target.shiftDown(1); //Makes it game over once reached the bottom
+
+   return 0;
+}
+
+void endgame() //ends game when condition is met
+{
+  uBit.display.clear();
+  uBit.display.scroll("GAME OVER!");
+}
+
+bool inColumn(int x) //check to see if there are any target in the column
+{
+  for (int y = 0; y < 5; y++)
+  {
+    if (target.getPixelValue(x,y))
+    {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+void inUpdate() // to move target from left to right
+{
+  bool moveRight = true;
+
+  while(!game_over)
+  {
+    uBit.sleep(TargetSpeed); //sets sleep speed
+
+    if (moveRight) //if true then follow execution below
+    {
+      if (inColumn(4))
+      {
+        moveRight = false;
+        if (addTarget() == 1) //if the target in column 4 and target game is 1
+                              //then game over
+        {
+          game_over = true;
+          return;
+        }
+      }
+      else
+      {
+        target.shiftRight(1); //else shiftRight
+      }
+    }
+    else //otherwise if column is 0 then game_over
+    {
+      if (inColumn(0))
+      {
+        moveRight = true;
+        if (addTarget() == 1)
+        {
+          game_over = true;
+          return;
+        }
+      }
+      else
+      {
+        target.shiftLeft(1);
+      }
+    }
+  }
+}
+
+void ammo() //moving the bullet up the screen
+{
+  while (!game_over)
+  {
+    uBit.sleep(BulletSpeed); //set speed of bullet according to variabe
+
+    if (bullet.y != -1) //if
+    {
+      bullet.y--;
+    }
+
+     if (target.getPixelValue(bullet.x, bullet.y) > 0) //clearing the other pixels below it
+     {
+       target.getPixelValue(bullet.x, bullet.y);
+       bullet.x = -1;
+       bullet.y = -1;
+     }
+  }
+}
+
+void play()
+{
+  while (!game_over)
+  {
+    uBit.sleep(PlayerSpeed); //set speed of player
+
+    if (uBit.accelerometer.getX() < -300 && player.x > 0) //if MB tilted left then move left
+    { //sets player start position
+      player.x--;
+    }
+    if (uBit.accelerometer.getX() > 300 && player.x < 4)//vice versa
+    {
+      player.x++;
+    }
+  }
+}
+
+void fire(MicroBitEvent) //fires when either A or B is pressed
+{
+  if (bullet.y == -1)
+  {
+    bullet.y = 4;
+    bullet.x = player.x; //bullet from player
+  }
+}
+
+
+void ShootG()//this where the game is put together
+{
+  game_over = 0;
+  player.x = 2;
+  player.y = 4;
+  bullet.x = -1;
+  bullet.y = -1;
+
+  addTarget(); //creates the line here
+
+  create_fiber(inUpdate); //the fiber is created here for update
+  create_fiber(ammo); //bullet
+  create_fiber(play); //and for the player
+
+  uBit.messageBus.listen(MICROBIT_ID_BUTTON_A, MICROBIT_BUTTON_EVT_CLICK, fire);
+  uBit.messageBus.listen(MICROBIT_ID_BUTTON_B, MICROBIT_BUTTON_EVT_CLICK, fire);
+  //above lines listens for the button presses
+  while (!game_over) //runs the game
+    {
+        uBit.sleep(10);
+        uBit.display.image.paste(target);
+        uBit.display.image.setPixelValue(player.x, player.y, 255);
+        uBit.display.image.setPixelValue(bullet.x, bullet.y, 255);
+    }
+
+    endgame(); //ends game when conditikon has been met
+}
+
+int main()
+{
+  uBit.init();
+
+  uBit.display.scroll("SHOOT IT");
+  uBit.display.scroll("PRESS ANY BUTTON TO SHOOT!");
+
+  while (1)
+  {
+    ShootG(); //the running of the game while 1
+  }
+}
+<<<<<<< HEAD
+
+=======
+>>>>>>> e4ea6942c4b1a2a6e9b6f850a34d0f5d5414559e

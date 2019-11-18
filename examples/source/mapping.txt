@@ -1,0 +1,46 @@
+
+/**
+ * File: mapping.cpp
+ * Author: Sharmin Rony and Sharon Cheeran
+ * Date: 01/03/2019
+ * Desc: CPP file for getting the character and mapping it
+ */
+
+#include "MicroBit.h"
+#include "mapping.h"
+
+
+
+char mapping::getCharacter(string MC)
+{
+
+  char RValue = '/';
+  MCMapItr = MCMap.find(MC);
+  if (MCMapItr == MCMap.end())
+  {
+    //uBit.display.print("Invalid");
+  }
+  else
+  {
+    RValue = MCMapItr->second;
+  }
+  return RValue;
+}
+
+string mapping::findMC(char character)
+{
+  string RValue = "/";
+  for (MCMapItr = MCMap.begin(); MCMapItr != MCMap.end(); ++MCMapItr)
+  {
+    if (character == MCMapItr->second)
+    {
+      RValue = MCMapItr->first;
+      break;
+    }
+  }
+  return RValue;
+}
+
+mapping::mapping()
+{
+}
